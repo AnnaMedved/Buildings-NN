@@ -1,0 +1,6 @@
+pycocotools
+pandas
+torchvision
+# utils
+# transforms
+sgmllib3k
