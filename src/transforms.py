@@ -50,6 +50,10 @@ class PILToTensor(nn.Module):
         self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
     ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         image = F.pil_to_tensor(image)
+
+        # note!!! added this line
+        image = F.convert_image_dtype(image)
+
         return image, target
 
 
