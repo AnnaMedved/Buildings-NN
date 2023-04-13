@@ -29,7 +29,7 @@ class FacadesDataset(torch.utils.data.Dataset):
         self.imgs = list(sorted(os.listdir(os.path.join(data_path, "images"))))
 
         # Creating masks process (if is empty): 
-        if (len(os.listdir(im_pth)) != 0) & (len(os.listdir(msks_pth)) == 0): 
+        if (len(os.listdir(im_pth)) != len(os.listdir(msks_pth))) | (len(os.listdir(msks_pth)) == 0): 
             
             with open(coco_json_path, 'r') as f: 
                 res_json = json.load(f)
@@ -38,11 +38,16 @@ class FacadesDataset(torch.utils.data.Dataset):
             # Coco-helper for all dataset:  
             coco = COCO(coco_json_path)
             cat_ids = coco.getCatIds()
+
+            anns_df = pd.DataFrame(res_json['annotations'])
+            self.anns = anns_df
             
             # Process for all imgs: 
             for id in images_df.id.unique():
+                # Getting image from coco-object:
                 img = coco.imgs[id]
-                anns_ids = coco.getAnnIds(imgIds=img['id'], catIds=cat_ids, iscrowd=None)
+                # Getting all the IDs from image:
+                anns_ids = coco.getAnnIds(imgIds=img['id'], catIds=cat_ids, iscrowd=False)
                 anns = coco.loadAnns(anns_ids)
 
                 # Get mask for all annotation in image: 
@@ -72,40 +77,54 @@ class FacadesDataset(torch.utils.data.Dataset):
         img_path = os.path.join(self.root, "images", self.imgs[idx])
         mask_path = os.path.join(self.root, "masks", self.masks[idx])
         img = Image.open(img_path).convert("RGB")
-        # note that we haven't converted the mask to RGB,
-        # because each color corresponds to a different instance
-        # with 0 being background
-        mask = Image.open(mask_path)
-        mask = np.array(mask)
-        # instances are encoded as different colors
-        obj_ids = np.unique(mask)
-        # first id is the background, so remove it
-        obj_ids = obj_ids[1:]
+        anns = self.anns
+        obj = anns[anns['image_id']==idx]
+        # obj_ids = obj.id # Series of masks
 
-        # split the color-encoded mask into a set
-        # of binary masks
-        masks = mask == obj_ids[:, None, None]
+        # # note that we haven't converted the mask to RGB,
+        # # because each color corresponds to a different instance
+        # # with 0 being background
+        # mask = Image.open(mask_path)
+        # mask = np.array(mask)
+        # # instances are encoded as different colors
+        # obj_ids = np.unique(mask)
+
+        # # first id is the background, so remove it
+        # obj_ids = obj_ids[1:]
+
+        # # split the color-encoded mask into a set
+        # # of binary masks
+        # masks = mask == obj_ids[:, None, None]
 
         # get bounding box coordinates for each mask
-        num_objs = len(obj_ids)
-        boxes = []
-        for i in range(num_objs):
-            pos = np.where(masks[i])
-            xmin = np.min(pos[1])
-            xmax = np.max(pos[1])
-            ymin = np.min(pos[0])
-            ymax = np.max(pos[0])
-            boxes.append([xmin, ymin, xmax, ymax])
+        # num_objs = len(obj_ids)
+        # boxes = []
+        # for i in range(num_objs):
+        #     pos = np.where(masks[i])
+        #     xmin = np.min(pos[1])
+        #     xmax = np.max(pos[1])
+        #     ymin = np.min(pos[0])
+        #     ymax = np.max(pos[0])
+        #     boxes.append([xmin, ymin, xmax, ymax])
 
-        boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        # there is only one class
-        labels = torch.ones((num_objs,), dtype=torch.int64)
-        masks = torch.as_tensor(masks, dtype=torch.uint8)
-
-        image_id = torch.tensor([idx])
-        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        boxes = np.array([obj.bbox]) #torch.as_tensor(
+            # np.array([obj.bbox]), dtype=torch.float32
+            # )
+        labels = np.array([obj.category_id]) #  torch.tensor(
+            # , dtype=torch.int64
+            # )
+        masks = np.array([obj.segmentation]) #torch.tensor(
+            # np.array([obj.segmentation]), dtype=torch.uint8
+            # )
+        image_id = np.array(idx)
+        # image_id = idx# torch.tensor([idx])
+        area = np.array(obj.area) # torch.as_tensor(
+        #     [obj.area], dtype=torch.float32
+        #     )
         # suppose all instances are not crowd
-        iscrowd = torch.zeros((num_objs,), dtype=torch.int64)
+        iscrowd = np.array(obj.iscrowd) # torch.tensor(
+            # np.array([obj.iscrowd]), dtype=torch.int64
+            # )
 
         target = {}
         target["boxes"] = boxes
