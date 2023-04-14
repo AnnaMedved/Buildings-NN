@@ -107,17 +107,17 @@ class FacadesDataset(torch.utils.data.Dataset):
         #     ymax = np.max(pos[0])
         #     boxes.append([xmin, ymin, xmax, ymax])
 
-        boxes = torch.tensor(obj.bbox) #torch.as_tensor(
+        boxes = np.array(obj.bbox) #torch.as_tensor(
         # np.array([obj.bbox]), dtype=torch.float32
         # )
-        labels = torch.tensor(obj.category_id) #  torch.tensor(
+        labels = np.array(obj.category_id) #  torch.tensor(
         # , dtype=torch.int64
                     # )
-        masks = np.array([obj.segmentation]) #, dtype=torch.int32
+        masks = np.array(obj.segmentation) #, dtype=torch.int32
             
-        image_id = torch.tensor(idx)
-        area = torch.tensor(obj.area, dtype=torch.float32)
-        iscrowd =  torch.tensor(obj.iscrowd, dtype=torch.int64)
+        image_id = np.array(idx)
+        area = np.array(obj.area, dtype=np.float32)
+        iscrowd =  np.array(obj.iscrowd, dtype=np.int64)
 
         target = {}
         target["boxes"] = boxes
