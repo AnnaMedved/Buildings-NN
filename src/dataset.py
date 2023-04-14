@@ -7,6 +7,7 @@ import pandas as pd
 
 from PIL import Image
 from pycocotools.coco import COCO
+from torch.nn.utils.rnn import pad_sequence
 
 
 class FacadesDataset(torch.utils.data.Dataset):
@@ -107,22 +108,27 @@ class FacadesDataset(torch.utils.data.Dataset):
         #     ymax = np.max(pos[0])
         #     boxes.append([xmin, ymin, xmax, ymax])
 
-        boxes = np.array(obj.bbox) #torch.as_tensor(
-        # np.array([obj.bbox]), dtype=torch.float32
-        # )
-        labels = np.array(obj.category_id) #  torch.tensor(
-        # , dtype=torch.int64
-                    # )
-        masks = np.array(obj.segmentation) #, dtype=torch.int32
-            
-        image_id = np.array(idx)
-        area = np.array(obj.area, dtype=np.float32)
-        iscrowd =  np.array(obj.iscrowd, dtype=np.int64)
+        vals_b = np.array([v for v in obj.bbox])
+        boxes = torch.from_numpy(vals_b) #torch.as_tensor(
+
+        vals_l = np.array([l for l in obj.category_id])
+        labels = torch.from_numpy(vals_l) #  torch.tensor(
+
+        masks_t = [torch.tensor(obj[0]) for obj in obj.segmentation]
+        vals_m = pad_sequence(masks_t, batch_first=True)
+                    
+        image_id = torch.tensor(idx)
+
+        vals_a = np.array([a for a in obj.area])
+        area = torch.from_numpy(vals_a)
+
+        vals_cr = np.array([cr for cr in obj.iscrowd])
+        iscrowd =  torch.from_numpy(vals_cr)
 
         target = {}
         target["boxes"] = boxes
         target["labels"] = labels
-        target["masks"] = masks
+        target["masks"] = vals_m
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
