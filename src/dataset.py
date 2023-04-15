@@ -74,6 +74,21 @@ class FacadesDataset(torch.utils.data.Dataset):
         self.masks = list(sorted(os.listdir(os.path.join(data_path, "masks"))))
 
     def __getitem__(self, idx):
+        def box_xywh_to_xyxy(boxes: torch.Tensor) -> torch.Tensor:
+            """
+            Converts bounding boxes from (x, y, w, h) format to (x1, y1, x2, y2) format.
+            (x, y) refers to top left of bouding box.
+            (w, h) refers to width and height of box.
+            Arguments:
+                boxes (Tensor[N, 4]): boxes in (x, y, w, h) which will be converted.
+            Returns:
+                boxes (Tensor[N, 4]): boxes in (x1, y1, x2, y2) format.
+            """
+            x, y, w, h = boxes.unbind(-1)
+            boxes = torch.stack([x, y, x + w, y + h], dim=-1)
+            return boxes
+        
+
         # load images ad masks
         img_path = os.path.join(self.root, "images", self.imgs[idx])
         mask_path = os.path.join(self.root, "masks", self.masks[idx])
@@ -107,12 +122,14 @@ class FacadesDataset(torch.utils.data.Dataset):
         #     ymin = np.min(pos[0])
         #     ymax = np.max(pos[0])
         #     boxes.append([xmin, ymin, xmax, ymax])
-
+        
         vals_b = np.array([v for v in obj.bbox])
-        boxes = torch.from_numpy(vals_b) #torch.as_tensor(
+        boxes = torch.from_numpy(vals_b) 
+        # Transform initial bboxes to right format: 
+        boxes = box_xywh_to_xyxy(boxes)
 
         vals_l = np.array([l for l in obj.category_id])
-        labels = torch.from_numpy(vals_l) #  torch.tensor(
+        labels = torch.from_numpy(vals_l) 
 
         masks_t = [torch.tensor(obj[0]) for obj in obj.segmentation]
         vals_m = pad_sequence(masks_t, batch_first=True)
@@ -128,10 +145,10 @@ class FacadesDataset(torch.utils.data.Dataset):
         target = {}
         target["boxes"] = boxes
         target["labels"] = labels
-        target["masks"] = vals_m
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
+        target["masks"] = vals_m
 
         if self.transforms is not None:
             img, target = self.transforms(img, target)
