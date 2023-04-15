@@ -28,20 +28,17 @@ class FacadesDataset(torch.utils.data.Dataset):
             os.makedirs(msks_pth)
 
         self.imgs = list(sorted(os.listdir(os.path.join(data_path, "images"))))
+        with open(coco_json_path, 'r') as f: 
+            res_json = json.load(f)
+        images_df = pd.DataFrame(res_json['images'])
+        anns_df = pd.DataFrame(res_json['annotations'])
+        self.anns = anns_df
 
-        # Creating masks process (if is empty): 
+        # Creating masks process 
         if (len(os.listdir(im_pth)) != len(os.listdir(msks_pth))) | (len(os.listdir(msks_pth)) == 0): 
-            
-            with open(coco_json_path, 'r') as f: 
-                res_json = json.load(f)
-            images_df = pd.DataFrame(res_json['images'])
-
             # Coco-helper for all dataset:  
             coco = COCO(coco_json_path)
             cat_ids = coco.getCatIds()
-
-            anns_df = pd.DataFrame(res_json['annotations'])
-            self.anns = anns_df
             
             # Process for all imgs: 
             for id in images_df.id.unique():
@@ -123,16 +120,21 @@ class FacadesDataset(torch.utils.data.Dataset):
         #     ymax = np.max(pos[0])
         #     boxes.append([xmin, ymin, xmax, ymax])
         
+        # Getting masks:
         vals_b = np.array([v for v in obj.bbox])
         boxes = torch.from_numpy(vals_b) 
         # Transform initial bboxes to right format: 
         boxes = box_xywh_to_xyxy(boxes)
 
+        # Getting labels:
         vals_l = np.array([l for l in obj.category_id])
         labels = torch.from_numpy(vals_l) 
 
+        # Getting masks:
         masks_t = [torch.tensor(obj[0]) for obj in obj.segmentation]
         vals_m = pad_sequence(masks_t, batch_first=True)
+        # Shape of [num_classses, h, w]:
+        vals_m = vals_m.expand(2, -1, -1)
                     
         image_id = torch.tensor(idx)
 
