@@ -186,8 +186,10 @@ def convert_to_coco_api(ds):
             if "masks" in targets:
                 # bimask = masks[i].numpy()
                 try: 
-                    bimask = np.array(masks[i], dtype=int)
-                    ann["segmentation"] = coco_mask.encode(bimask)
+                    # mask = np.array(masks[i], dtype=int)
+                    # ann["segmentation"] = coco_mask.encode(bimask)
+                    init_mask = masks[i] # shape of (n, h, w)
+                    ann["segmentation"] = init_mask
                 except Exception as e: 
                     print('Numpy array datatype is still a problem')
             if "keypoints" in targets:
