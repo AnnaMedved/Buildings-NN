@@ -193,6 +193,8 @@ def convert_to_coco_api(ds):
                     ann["segmentation"] = encode(init_mask)
                 except Exception as e: 
                     print('Numpy array datatype is still a problem')
+                    print(e)
+                    break
             if "keypoints" in targets:
                 ann["keypoints"] = keypoints[i]
                 ann["num_keypoints"] = sum(k != 0 for k in keypoints[i][2::3])
