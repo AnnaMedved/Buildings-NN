@@ -6,7 +6,8 @@ import torch
 import torch.utils.data
 import torchvision
 import torchvision.transforms as T
-from pycocotools import mask as coco_mask
+# from pycocotools import mask as coco_mask
+from src.mask import encode 
 from pycocotools.coco import COCO
 
 
@@ -189,7 +190,7 @@ def convert_to_coco_api(ds):
                     # mask = np.array(masks[i], dtype=int)
                     # ann["segmentation"] = coco_mask.encode(bimask)
                     init_mask = masks[i] # shape of (n, h, w)
-                    ann["segmentation"] = init_mask
+                    ann["segmentation"] = encode(init_mask)
                 except Exception as e: 
                     print('Numpy array datatype is still a problem')
             if "keypoints" in targets:
