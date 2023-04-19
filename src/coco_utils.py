@@ -1,5 +1,6 @@
 import copy
 import os
+import numpy as np 
 
 import torch
 import torch.utils.data
@@ -183,7 +184,12 @@ def convert_to_coco_api(ds):
             ann["iscrowd"] = iscrowd[i]
             ann["id"] = ann_id
             if "masks" in targets:
-                ann["segmentation"] = coco_mask.encode(masks[i].numpy())
+                # bimask = masks[i].numpy()
+                try: 
+                    bimask = np.array(masks[i], dtype=int)
+                    ann["segmentation"] = coco_mask.encode(bimask)
+                except Exception as e: 
+                    print('Numpy array datatype is still a problem')
             if "keypoints" in targets:
                 ann["keypoints"] = keypoints[i]
                 ann["num_keypoints"] = sum(k != 0 for k in keypoints[i][2::3])
