@@ -134,7 +134,7 @@ class FacadesDataset(torch.utils.data.Dataset):
         masks_t = [torch.tensor(obj[0]) for obj in obj.segmentation]
         vals_m = pad_sequence(masks_t, batch_first=True)
         # Shape of [num_classses, h, w]:
-        vals_m = vals_m.expand(2, -1, -1)
+        vals_m = vals_m.expand(-1, -1, 2)
                     
         image_id = torch.tensor(idx)
 
