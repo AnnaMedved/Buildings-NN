@@ -72,17 +72,24 @@ import pycocotools._mask as _mask
 # Data, paper, and tutorials available at:  http://mscoco.org/
 # Code written by Piotr Dollar and Tsung-Yi Lin, 2015.
 # Licensed under the Simplified BSD License [see coco/license.txt]
+import numpy as np 
+import torch
+
 
 iou         = _mask.iou
 merge       = _mask.merge
 frPyObjects = _mask.frPyObjects
 
 def encode(bimask):
+    if isinstance(bimask, torch.Tensor): 
+        # bimask = np.array(bimask, dtype=np.uint8)
+        bimask = np.asfortranarray(bimask, dtype=np.uint8)
+
     if len(bimask.shape) == 3:
         return _mask.encode(bimask)
     elif len(bimask.shape) == 2:
         h, w = bimask.shape
-        return _mask.encode(bimask.reshape((h, w, 1), order='F'))[0]
+        return _mask.encode(bimask.reshape((h, w, 1)))[0]
 
 def decode(rleObjs):
     if type(rleObjs) == list:
